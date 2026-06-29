@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "SmoothGPT",
   "description": "Makes long ChatGPT conversations fast by virtualising off-screen message turns with CSS containment.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "browser_specific_settings": {
     "gecko": {
       "id": "smoothgpt@kud.io",

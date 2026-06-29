@@ -1,6 +1,6 @@
 {
   "name": "webextension-smoothgpt",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Makes long ChatGPT conversations fast by virtualising off-screen message turns with CSS containment.",
   "private": true,
   "author": "kud",
