@@ -218,8 +218,15 @@ const hookNavigation = () => {
 
 // The popup asks for the latest snapshot whenever it is open.
 browser.runtime.onMessage.addListener((message) => {
-  if (message?.type === "getStats") return Promise.resolve(stats)
+  if (message?.type === "getStats") {
+    refresh()
+    return Promise.resolve(stats)
+  }
 })
+
+// Safety net: re-observe every 3s in case ChatGPT remounted the container
+// and the MutationObserver is now watching a detached node.
+setInterval(startObserving, 3000)
 
 // The popup flips `enabled` via storage; react immediately. Reset the structural
 // snapshot so the next pass re-applies (or unwinds) containment in full.
