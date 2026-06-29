@@ -8,6 +8,9 @@
  * Technique: CSS containment (content-visibility: auto + contain-intrinsic-size).
  * The browser keeps all nodes in the DOM — Ctrl+F, text selection, React
  * reconciliation, and code-block copy buttons all continue to work normally.
+ *
+ * The toolbar popup queries this script (runtime message `getStats`) for live
+ * counts, and flips the `enabled` flag through `storage.local`.
  */
 
 // ── Configuration ─────────────────────────────────────────────────────────────
@@ -50,6 +53,20 @@ const CONTAINER_SELECTORS = [
   // Fallback
   "main",
 ]
+
+// ── Live state (read by the popup) ───────────────────────────────────────────
+
+/** Whether containment is active. Mirrors `storage.local.enabled` (default on). */
+let enabled = true
+
+/** Latest snapshot, returned verbatim to the popup on `getStats`. */
+let stats = {
+  total: 0,
+  contained: 0,
+  rendered: 0,
+  engaged: false,
+  enabled: true,
+}
 
 // ── DOM helpers ────────────────────────────────────────────────────────────────
 
@@ -99,14 +116,17 @@ const removeContainment = (turn) => {
 
 const refresh = () => {
   const turns = queryTurns()
+  const total = turns.length
 
-  if (turns.length < ENGAGE_THRESHOLD) {
-    // Short thread — undo any containment left over from a previously longer chat
+  // Disabled, or thread too short — undo any leftover containment and report idle.
+  if (!enabled || total < ENGAGE_THRESHOLD) {
     turns.forEach(removeContainment)
+    stats = { total, contained: 0, rendered: total, engaged: false, enabled }
     return
   }
 
   const lastTurn = turns[turns.length - 1]
+  let contained = 0
 
   turns.forEach((turn) => {
     // Always keep the last turn fully rendered:
@@ -117,8 +137,17 @@ const refresh = () => {
       removeContainment(turn)
     } else {
       applyContainment(turn)
+      contained += 1
     }
   })
+
+  stats = {
+    total,
+    contained,
+    rendered: total - contained,
+    engaged: true,
+    enabled,
+  }
 }
 
 // Debounce via rAF: coalesce rapid DOM mutations into a single pass per frame
@@ -164,6 +193,20 @@ const hookNavigation = () => {
   history.replaceState = wrap(history.replaceState)
 }
 
+// ── Popup messaging + toggle ────────────────────────────────────────────────────
+
+// The popup asks for the latest snapshot whenever it is open.
+browser.runtime.onMessage.addListener((message) => {
+  if (message?.type === "getStats") return Promise.resolve(stats)
+})
+
+// The popup flips `enabled` via storage; react immediately.
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes.enabled) return
+  enabled = changes.enabled.newValue !== false
+  scheduleRefresh()
+})
+
 // ── Initialisation ─────────────────────────────────────────────────────────────
 
 const init = () => {
@@ -179,7 +222,18 @@ const init = () => {
   setTimeout(init, 500)
 }
 
+const boot = async () => {
+  // Load the persisted toggle (default on) before the first containment pass.
+  try {
+    const stored = await browser.storage.local.get("enabled")
+    enabled = stored.enabled !== false
+  } catch {
+    enabled = true
+  }
+  init()
+}
+
 // Graceful degradation: do nothing on browsers without `content-visibility`
 // (the whole technique is a no-op there). strict_min_version already gates
 // installation, but this keeps the script harmless if loaded anywhere older.
-if (CSS.supports("content-visibility", "auto")) init()
+if (CSS.supports("content-visibility", "auto")) boot()

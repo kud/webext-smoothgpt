@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmoothGPT</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #1b1b1f;
+        --fg: #e7e7ea;
+        --muted: #8a8a93;
+        --line: #2c2c33;
+        --accent: #ff7139;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        width: 248px;
+        margin: 0;
+        padding: 14px 16px 16px;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          13px/1.4 system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .logo {
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+      .status {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+      }
+      .status[data-kind="on"] {
+        color: var(--accent);
+      }
+      .stats {
+        margin: 0 0 12px;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-top: 1px solid var(--line);
+      }
+      .row dt {
+        color: var(--muted);
+      }
+      .row dd {
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        cursor: pointer;
+      }
+      .toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .track {
+        width: 38px;
+        height: 22px;
+        border-radius: 11px;
+        background: var(--line);
+        position: relative;
+        transition: background 0.15s ease;
+      }
+      .thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--fg);
+        transition: transform 0.15s ease;
+      }
+      input:checked + .track {
+        background: var(--accent);
+      }
+      input:checked + .track .thumb {
+        transform: translateX(16px);
+      }
+      .hint {
+        margin: 10px 0 0;
+        min-height: 14px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="logo">SmoothGPT</span>
+      <span id="status" class="status">…</span>
+    </header>
+
+    <dl class="stats">
+      <div class="row">
+        <dt>Turns in conversation</dt>
+        <dd id="total">—</dd>
+      </div>
+      <div class="row">
+        <dt>Virtualised</dt>
+        <dd id="contained">—</dd>
+      </div>
+      <div class="row">
+        <dt>Rendered live</dt>
+        <dd id="rendered">—</dd>
+      </div>
+    </dl>
+
+    <label class="toggle">
+      <span>Enabled</span>
+      <input type="checkbox" id="toggle" />
+      <span class="track"><span class="thumb"></span></span>
+    </label>
+
+    <p id="hint" class="hint"></p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

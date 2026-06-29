@@ -19,8 +19,9 @@
 - **CSS-containment only** — applies `content-visibility: auto` to off-screen turns; no nodes are removed or detached from the DOM.
 - **Nothing breaks** — Ctrl+F, text selection, code-block copy buttons, and ChatGPT's own React reconciliation all keep working normally.
 - **Fully local, zero telemetry** — the extension makes no network calls beyond the page itself and collects no data.
-- **No accounts or extra permissions** — the only access granted is content-script injection on `chatgpt.com` and `chat.openai.com`.
+- **Live stats popup** — a toolbar popup shows how many turns are virtualised vs. rendered live, with a one-click on/off toggle.
 - **Activates only when needed** — containment engages past 30 turns so short conversations are left entirely untouched.
+- **Minimal & private** — no account, no telemetry; permissions are limited to ChatGPT content-script access plus `activeTab` and `storage` for the popup toggle.
 
 ## How it works
 
@@ -75,9 +76,11 @@ Retrieve both values from [addons.mozilla.org/en-US/developers/addon/api/key/](h
 
 ## Permissions
 
-- `https://chatgpt.com/*` and `https://chat.openai.com/*` — content-script injection only; required to read and modify the conversation DOM.
+- `https://chatgpt.com/*` and `https://chat.openai.com/*` — content-script injection; required to read and modify the conversation DOM.
+- `activeTab` — lets the toolbar popup read live stats from the ChatGPT tab you have open, only when you click it.
+- `storage` — persists the popup's on/off toggle locally.
 
-No data leaves the browser. No other permissions are requested.
+No data leaves the browser.
 
 ## Licence
 
