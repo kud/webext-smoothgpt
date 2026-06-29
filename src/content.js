@@ -9,6 +9,11 @@
  * The browser keeps all nodes in the DOM — Ctrl+F, text selection, React
  * reconciliation, and code-block copy buttons all continue to work normally.
  *
+ * Hot-loop budget: during streaming the MutationObserver fires every frame, so
+ * the per-frame work is kept minimal — a WeakSet skips already-contained turns,
+ * a fast-path early-exits when only the last turn changed, and the matched turn
+ * selector is cached. See `refresh()`.
+ *
  * The toolbar popup queries this script (runtime message `getStats`) for live
  * counts, and flips the `enabled` flag through `storage.local`.
  */
@@ -54,7 +59,7 @@ const CONTAINER_SELECTORS = [
   "main",
 ]
 
-// ── Live state (read by the popup) ───────────────────────────────────────────
+// ── Live state ───────────────────────────────────────────────────────────────
 
 /** Whether containment is active. Mirrors `storage.local.enabled` (default on). */
 let enabled = true
@@ -68,12 +73,35 @@ let stats = {
   enabled: true,
 }
 
+/**
+ * Turns we have already contained. A WeakSet (not a WeakMap) because we only
+ * need membership — there is no per-turn value to store. Entries are released
+ * automatically when ChatGPT removes a turn node, so this never leaks.
+ */
+const contained = new WeakSet()
+
+// Last structural snapshot, so pure-streaming frames (same count, same last
+// turn) can early-out without re-scanning every turn.
+let lastTurnEl = null
+let lastTotal = 0
+
+// The turn selector that currently matches — avoids retrying the others each frame.
+let activeTurnSelector = null
+
 // ── DOM helpers ────────────────────────────────────────────────────────────────
 
 const queryTurns = () => {
+  if (activeTurnSelector) {
+    const nodes = [...document.querySelectorAll(activeTurnSelector)]
+    if (nodes.length > 0) return nodes
+    activeTurnSelector = null // selector stopped matching — re-detect below
+  }
   for (const sel of TURN_SELECTORS) {
     const nodes = [...document.querySelectorAll(sel)]
-    if (nodes.length > 0) return nodes
+    if (nodes.length > 0) {
+      activeTurnSelector = sel
+      return nodes
+    }
   }
   return []
 }
@@ -86,30 +114,20 @@ const findContainer = () => {
   return document.body
 }
 
-/**
- * Returns true if the turn is currently streaming (i.e. the assistant is still
- * generating tokens into it). ChatGPT has used different signals across versions;
- * we check all known ones.
- */
-const isStreaming = (turn) =>
-  turn.querySelector(
-    '.result-streaming, [data-state="streaming"], [class*="result-streaming"]',
-  ) !== null
-
 // ── Containment ────────────────────────────────────────────────────────────────
 
 const applyContainment = (turn) => {
-  if (turn.dataset.smoothgpt === "1") return
+  if (contained.has(turn)) return
   turn.style.contentVisibility = "auto"
   turn.style.containIntrinsicSize = INTRINSIC_SIZE
-  turn.dataset.smoothgpt = "1"
+  contained.add(turn)
 }
 
 const removeContainment = (turn) => {
-  if (!turn.dataset.smoothgpt) return
+  if (!contained.has(turn)) return
   turn.style.contentVisibility = ""
   turn.style.containIntrinsicSize = ""
-  delete turn.dataset.smoothgpt
+  contained.delete(turn)
 }
 
 // ── Core refresh loop ──────────────────────────────────────────────────────────
@@ -117,37 +135,37 @@ const removeContainment = (turn) => {
 const refresh = () => {
   const turns = queryTurns()
   const total = turns.length
+  const last = total > 0 ? turns[total - 1] : null
 
-  // Disabled, or thread too short — undo any leftover containment and report idle.
+  // Disabled, or thread too short — unwind any containment and report idle.
   if (!enabled || total < ENGAGE_THRESHOLD) {
     turns.forEach(removeContainment)
+    lastTurnEl = last
+    lastTotal = total
     stats = { total, contained: 0, rendered: total, engaged: false, enabled }
     return
   }
 
-  const lastTurn = turns[turns.length - 1]
-  let contained = 0
-
-  turns.forEach((turn) => {
-    // Always keep the last turn fully rendered:
-    //   • it may be actively streaming
-    //   • ChatGPT auto-scrolls to it, so it must be in the normal layout flow
-    // Also exempt any turn explicitly detected as streaming.
-    if (turn === lastTurn || isStreaming(turn)) {
-      removeContainment(turn)
-    } else {
-      applyContainment(turn)
-      contained += 1
-    }
-  })
-
-  stats = {
-    total,
-    contained,
-    rendered: total - contained,
-    engaged: true,
-    enabled,
+  // Fast path: nothing structural changed since the last pass — the assistant is
+  // only streaming tokens into the (already-exempt) last turn. Skip the scan.
+  if (total === lastTotal && last === lastTurnEl) {
+    stats = { total, contained: total - 1, rendered: 1, engaged: true, enabled }
+    return
   }
+
+  // Structural change (a new turn arrived, or the chat was switched): contain
+  // every turn except the last. The last turn is always left live — it is where
+  // streaming happens and where ChatGPT auto-scrolls, so no separate streaming
+  // check is needed. applyContainment skips turns already in the WeakSet, so the
+  // steady-state cost is the few newly-added turns, not the whole thread.
+  for (const turn of turns) {
+    if (turn === last) removeContainment(turn)
+    else applyContainment(turn)
+  }
+
+  lastTurnEl = last
+  lastTotal = total
+  stats = { total, contained: total - 1, rendered: 1, engaged: true, enabled }
 }
 
 // Debounce via rAF: coalesce rapid DOM mutations into a single pass per frame
@@ -166,6 +184,9 @@ let conversationObserver = null
 
 const startObserving = () => {
   conversationObserver?.disconnect()
+  // Force a full structural pass — the conversation (and its turns) may have changed.
+  lastTurnEl = null
+  lastTotal = 0
   const container = findContainer()
   conversationObserver = new MutationObserver(scheduleRefresh)
   conversationObserver.observe(container, { childList: true, subtree: true })
@@ -200,10 +221,13 @@ browser.runtime.onMessage.addListener((message) => {
   if (message?.type === "getStats") return Promise.resolve(stats)
 })
 
-// The popup flips `enabled` via storage; react immediately.
+// The popup flips `enabled` via storage; react immediately. Reset the structural
+// snapshot so the next pass re-applies (or unwinds) containment in full.
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes.enabled) return
   enabled = changes.enabled.newValue !== false
+  lastTurnEl = null
+  lastTotal = 0
   scheduleRefresh()
 })
 
