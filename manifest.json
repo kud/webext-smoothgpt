@@ -13,9 +13,6 @@
     }
   },
   "permissions": [],
-  "background": {
-    "scripts": ["src/background.js"]
-  },
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
