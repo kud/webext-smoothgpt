@@ -16,7 +16,10 @@
     "version": "sed -E -i 's/^(\\s*\"version\":\\s*)\"[^\"]*\"/\\1\"'\"$npm_package_version\"'\"/' manifest.json && git add manifest.json",
     "sign:listed": "WEB_EXT_API_KEY=$MOZILLA_ADDONS_JWT_ISSUER WEB_EXT_API_SECRET=$MOZILLA_ADDONS_JWT_SECRET web-ext sign --channel=listed --upload-source-code --ignore-files=publish.sh",
     "sign:self": "WEB_EXT_API_KEY=$MOZILLA_ADDONS_JWT_ISSUER WEB_EXT_API_SECRET=$MOZILLA_ADDONS_JWT_SECRET web-ext sign --channel=unlisted --ignore-files=publish.sh",
-    "publish": "bash publish.sh"
+    "publish": "bash publish.sh",
+    "mz:browse": "open 'https://addons.mozilla.org/developers/addon/smoothgpt@kud.io/'",
+    "mz:listing": "open 'https://addons.mozilla.org/firefox/addon/smoothgpt/'",
+    "mz:hub": "open 'https://addons.mozilla.org/developers/'"
   },
   "devDependencies": {
     "web-ext": "10.4.0"
