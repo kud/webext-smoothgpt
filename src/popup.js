@@ -50,26 +50,16 @@ const render = (stats) => {
   }
 }
 
-const activeTab = async () =>
-  (await browser.tabs.query({ active: true, currentWindow: true }))[0]
-
-const poll = async () => {
-  const tab = await activeTab()
-  if (!tab) return showInactive("No active tab.")
-  try {
-    render(await browser.tabs.sendMessage(tab.id, { type: "getStats" }))
-  } catch {
-    showInactive("Open a ChatGPT tab to see live stats.")
-  }
-}
+// No receiver resolves undefined, which render() already treats as "not a ChatGPT tab".
+const poll = async () =>
+  render(await webext.sendToActiveTab({ type: "getStats" }))
 
 els.toggle.addEventListener("change", (event) => {
-  browser.storage.local.set({ enabled: event.target.checked })
+  settings.set({ enabled: event.target.checked })
 })
 
 const init = async () => {
-  const stored = await browser.storage.local.get("enabled")
-  els.toggle.checked = stored.enabled !== false
+  els.toggle.checked = (await settings.get()).enabled
   poll()
 }
 

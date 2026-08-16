@@ -230,9 +230,8 @@ setInterval(startObserving, 3000)
 
 // The popup flips `enabled` via storage; react immediately. Reset the structural
 // snapshot so the next pass re-applies (or unwinds) containment in full.
-browser.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local" || !changes.enabled) return
-  enabled = changes.enabled.newValue !== false
+settings.onChange((values) => {
+  enabled = values.enabled
   lastTurnEl = null
   lastTotal = 0
   scheduleRefresh()
@@ -254,10 +253,10 @@ const init = () => {
 }
 
 const boot = async () => {
-  // Load the persisted toggle (default on) before the first containment pass.
+  // Load the persisted toggle before the first containment pass. A storage failure
+  // must still leave containment on rather than silently disabling the extension.
   try {
-    const stored = await browser.storage.local.get("enabled")
-    enabled = stored.enabled !== false
+    enabled = (await settings.get()).enabled
   } catch {
     enabled = true
   }
