@@ -3,16 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>SmoothGPT</title>
+    <link rel="stylesheet" href="vendor/tokens.css" />
+    <link rel="stylesheet" href="vendor/webext-ui.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
-  <body>
-    <header>
-      <span class="logo">SmoothGPT</span>
-      <span id="status" class="status">…</span>
+  <body class="popup stack">
+    <header class="row">
+      <span class="title">SmoothGPT</span>
+      <span id="status" class="badge">…</span>
     </header>
 
-    <dl class="stats">
+    <dl class="rows-divided">
       <div class="row">
         <dt>Turns in conversation</dt>
         <dd id="total">—</dd>
@@ -27,10 +30,12 @@
       </div>
     </dl>
 
-    <label class="toggle">
+    <label class="row toggle-row">
       <span>Enabled</span>
-      <input type="checkbox" id="toggle" />
-      <span class="track"><span class="thumb"></span></span>
+      <span class="switch">
+        <input type="checkbox" id="toggle" />
+        <span class="track"><span class="thumb"></span></span>
+      </span>
     </label>
 
     <p id="hint" class="hint"></p>

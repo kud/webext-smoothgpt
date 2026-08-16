@@ -20,6 +20,11 @@ const els = {
 const setStatus = (label, kind) => {
   els.status.textContent = label
   els.status.dataset.kind = kind
+  // The accent goes on the fill, never in the text. As a text colour the
+  // orange measures 3.48:1 on the background and the old "off" grey 3.19:1 —
+  // both below AA, and the two states were separated by hue alone. As a badge
+  // they differ by fill and border, which survives greyscale.
+  els.status.classList.toggle("badge-accent", kind === "on")
 }
 
 const showInactive = (hint) => {
