@@ -254,12 +254,9 @@ const init = () => {
 
 const boot = async () => {
   // Load the persisted toggle before the first containment pass. A storage failure
-  // must still leave containment on rather than silently disabling the extension.
-  try {
-    enabled = (await settings.get()).enabled
-  } catch {
-    enabled = true
-  }
+  // must still leave containment on rather than silently disabling the extension —
+  // taken from the schema rather than restated here, so the two cannot drift.
+  enabled = (await settings.get().catch(() => settings.defaults)).enabled
   init()
 }
 
