@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+<title>SmoothGPT</title>
+<desc>A smooth chat bubble with an open trailing edge that suggests motion.</desc>
+<g stroke="#171717" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+<path d="M166 420H278C325 420 345 396 372 364C409 320 453 294 514 294H644C759 294 852 387 852 502C852 617 759 710 644 710H474C436 710 411 733 328 754C312 758 304 749 313 735C333 704 347 673 354 628"/>
+<path d="M194 520H326"/>
+</g>
+</svg>
