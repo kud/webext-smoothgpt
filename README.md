@@ -6,12 +6,17 @@
 
 ![MIT](https://img.shields.io/badge/licence-MIT-22C55E?style=flat-square)
 ![Firefox 142+](https://img.shields.io/badge/Firefox-142%2B-FF7139?style=flat-square&logo=firefox-browser&logoColor=white)
-![AMO version](https://img.shields.io/amo/v/smoothgpt?style=flat-square&label=AMO&color=0060DF)
-![AMO users](https://img.shields.io/amo/users/smoothgpt?style=flat-square&color=0060DF)
 
 **Makes long ChatGPT conversations fast by virtualising off-screen message turns with CSS containment.**
 
 </div>
+
+> [!NOTE]
+> **Archived prototype.** SmoothGPT was an experiment in keeping very
+> long ChatGPT conversations responsive on Firefox, by letting the browser
+> skip layout and paint for off-screen turns. It is no longer listed on
+> Firefox Add-ons and isn't maintained for now. The code stays here for
+> reference.
 
 ## Features
 
@@ -31,9 +36,7 @@ Containment is only engaged once a conversation exceeds 30 turns. The currently-
 
 ## Install
 
-Firefox Add-ons (AMO): _link will appear after first submission_.
-
-To load temporarily for development, see **Development** below.
+There is no store listing. To try it, load it temporarily as described under **Development** below.
 
 ## Development
 
@@ -51,28 +54,6 @@ To load without Firefox Nightly: open `about:debugging → This Firefox → Load
 | `npm run dev`   | Launch Firefox Nightly with the extension hot-loaded |
 | `npm run lint`  | Validate manifest and source against AMO rules       |
 | `npm run build` | Package into `web-ext-artifacts/`                    |
-
-## Publishing
-
-**First submission** — run `bash publish.sh`. This builds the package, opens the AMO Developer Hub in your browser, and reveals the `web-ext-artifacts/` folder. Upload the `.zip` manually and complete the listing (description, screenshots, review queue). The very first submission cannot be automated.
-
-**Subsequent releases** — bump, tag, and push:
-
-```sh
-npm version patch   # or minor / major
-git push --follow-tags
-```
-
-`npm version` syncs the new version into `manifest.json` automatically (via the `version` lifecycle hook). CI picks up the `v*` tag, signs the package, and uploads it to AMO.
-
-**CI setup (one time)** — before the first CI-driven release, add two secrets to the GitHub repo:
-
-```sh
-gh secret set MOZILLA_ADDONS_JWT_ISSUER
-gh secret set MOZILLA_ADDONS_JWT_SECRET
-```
-
-Retrieve both values from [addons.mozilla.org/en-US/developers/addon/api/key/](https://addons.mozilla.org/en-US/developers/addon/api/key/).
 
 ## Permissions
 
